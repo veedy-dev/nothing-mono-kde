@@ -143,9 +143,29 @@ top.addWidget("org.kde.plasma.panelspacer");
 top.addWidget("org.kde.kdeconnect");
 
 var tray = top.addWidget("org.kde.plasma.systemtray");
+var enabledTrayItems = [
+    "org.kde.kdeconnect",
+    "org.kde.plasma.bluetooth",
+    "org.kde.plasma.cameraindicator",
+    "org.kde.plasma.clipboard",
+    "org.kde.plasma.devicenotifier",
+    "org.kde.plasma.manage-inputmethod",
+    "org.kde.plasma.mediacontroller",
+    "org.kde.plasma.notifications",
+    "org.kde.plasma.keyboardindicator",
+    "org.kde.plasma.weather",
+    "org.kde.kscreen",
+    "org.kde.plasma.battery",
+    "org.kde.plasma.keyboardlayout",
+    "org.kde.plasma.networkmanagement",
+    "org.kde.plasma.volume",
+    "org.kde.plasma.brightness.hdr"
+].join(",");
 configure(tray, ["General"], {
     scaleIconsToFit: false,
-    iconSpacing: 2
+    iconSpacing: 2,
+    extraItems: enabledTrayItems,
+    knownItems: enabledTrayItems + ",org.kde.plasma.brightness"
 });
 
 var clock = top.addWidget("org.kde.plasma.digitalclock");

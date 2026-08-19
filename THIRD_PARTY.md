@@ -10,6 +10,7 @@ components used by the rice. Copyright remains with each upstream author.
 | Panel Colorizer | https://github.com/luisbocanegra/plasma-panel-colorizer | GPL-3.0 |
 | PlasMusic Toolbar | https://github.com/ccatterina/plasmusic-toolbar | GPL-3.0 |
 | Window Title | https://github.com/dhruv8sh/plasma6-window-title-applet | GPL-2.0 |
+| KDE PowerDevil Brightness & Color | https://invent.kde.org/plasma/powerdevil | GPL-2.0-or-later / LGPL-2.0-or-later |
 | Yet Another Monochrome Icon Theme | https://github.com/googIyEYES/Yet-Another-Monochrome-Icon-Theme | See upstream |
 | LetMinimalDark theme | https://github.com/Letaryat/kde-LetMinimalDark-Theme | See upstream |
 | KDE QQC2 Desktop Style | https://invent.kde.org/frameworks/qqc2-desktop-style | LGPL-3.0 or GPL-2.0+ |

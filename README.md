@@ -20,6 +20,7 @@ screen geometry instead of being tied to one monitor.
 - configurable weather, world clock, calendar, notes, system monitoring, and
   media controls
 - a compact, clickable virtual desktop switcher
+- a Brightness & Color tray popup with an HDR and wide-color-gamut switch
 - monochrome themes, icons, cursors, wallpaper, and Nothing-style typography
 - matching desktop and lock-screen appearance
 - tuned KWin animations with a short but visible closing effect

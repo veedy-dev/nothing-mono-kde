@@ -3,8 +3,8 @@
 The configuration is distribution-independent. The published snapshot was
 developed and tested on:
 
-- KDE Plasma Workspace 6.7.3 on CachyOS
-- KWin 6.7.3, Wayland
+- KDE Plasma Workspace 6.7.4 on CachyOS
+- KWin 6.7.4, Wayland
 - Fastfetch 2.66.0
 - Qt 6.11.1
 - Samsung Odyssey G9 at 5120×1440
@@ -26,7 +26,8 @@ developed and tested on:
 - PlasMusic Toolbar
 - Window Title
 - custom compact virtual desktop pager
-- stock Global Menu, System Tray, Icon-only Task Manager
+- stock Global Menu and Icon-only Task Manager
+- customized PowerDevil Brightness & Color tray applet with an HDR/WCG switch
 
 ## KWin and OLED behavior
 
