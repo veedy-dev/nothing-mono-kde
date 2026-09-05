@@ -44,8 +44,8 @@ scaled sizes and margins, leaving the center available for windows.
 
 Build dependency installation is automatic on Arch-based, Debian/Ubuntu-based,
 Fedora, and openSUSE systems. On another distribution, install CMake, a C++
-compiler, Qt 6 development files, and optionally Fastfetch, then run the
-installer with `--no-packages`.
+compiler, Qt 6.7+ and KDE Frameworks KIO 6.21+ development files, and optionally
+Fastfetch, then run the installer with `--no-packages`.
 
 **AppGrid is an external prerequisite**, not bundled or installed by this script.
 Install it using the [official distro or user-local universal instructions](https://appgrid.xarbit.dev/#install),
@@ -120,7 +120,9 @@ The installer backs up affected KDE and toolkit configuration files under:
 
 Nested toolkit files and `~/.gtkrc-2.0` are included. Restore also removes
 configuration files that were absent before installation. Installed theme
-assets and user-local fonts are not uninstalled by the restore helper.
+assets, the dormant Dolphin style plugin, and user-local fonts are not uninstalled
+by the restore helper. Restoring `kdeglobals` and the previous session environment
+script restores style selection; installed Qt plugins remain discoverable.
 
 Restore the most recent backup with:
 
@@ -128,8 +130,20 @@ Restore the most recent backup with:
 ~/.local/share/nothingos-kde-rice/restore-latest.sh
 ```
 
-Log out and back in once after installation so KWin, fonts, and autostarted
-services are all loaded consistently.
+Log out and back in once after installation or restoration so KWin, fonts,
+Qt plugin discovery, and autostarted services are loaded consistently. Reopen
+applications to pick up the selected style.
+
+The full installer builds the Qt 6 Widgets style `NothingDolphin` and installs
+it under `~/.local/lib/qt6/plugins/styles/`. Qt Widgets comes from the Qt base
+development dependency; KDE Frameworks KIO 6.21+ development files provide the
+public breadcrumb background API. Its session script prepends `~/.local/lib/qt6/plugins`
+to `QT_PLUGIN_PATH`, preserving inherited entries. Only Dolphin breadcrumb/path
+backgrounds and normal unselected tabs become subtle charcoal (`#191919`);
+the active-tab pink indicator and hover feedback stay native. Titlebar,
+toolbars, sidebar, file area, and the global color scheme are unchanged by
+this override. Other applications receive native Breeze. `--layout-only`
+does not build, install, or select this style.
 
 Motion is a Nothing-inspired adaptation to KDE, not a full Nothing OS shell
 replacement. Window opening uses a 500ms OutQuint scale with OutCubic fade;

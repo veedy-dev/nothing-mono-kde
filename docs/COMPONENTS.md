@@ -14,6 +14,13 @@ developed and tested on:
 
 - Plasma theme: modified LetMinimalDark / Iridescent-inspired square styling
 - colors: LetMinimalDark
+- Qt Widgets style: `NothingDolphin`, a small native Breeze override built from
+  `native/dolphin-style` with Qt Widgets 6.7+ (from Qt base) and KDE Frameworks
+  KIOFileWidgets 6.21+ (from KIO development files), using its public breadcrumb
+  background API. Only Dolphin breadcrumb/path backgrounds and normal
+  unselected tabs use subtle charcoal `#191919`; the active-tab pink indicator
+  and hover feedback remain native. Titlebar, toolbars, sidebar, file area,
+  and global color roles are untouched; other applications use native Breeze
 - icons: modified Yet Another Monochrome Icon Theme (`YAMIS`)
 - cursor: We10XOS
 - typography: bundled Inter 4.1 (static text family, not Inter Display) for all
@@ -21,6 +28,15 @@ developed and tested on:
   is decorative-only for the calendar heading; NDot remains on clocks
 - KDE body/menu/toolbar/window-title roles: 10pt, smallest readable role: 9pt;
   monospace remains unchanged. See the [local font prerequisite](../README.md#local-font-prerequisite).
+
+The full installer installs `nothingos-dolphin-style.so` to
+`~/.local/lib/qt6/plugins/styles/`, selects `KDE/widgetStyle=NothingDolphin`,
+and prepends the parent plugin directory to `QT_PLUGIN_PATH` in
+`plasma-workspace/env/nothing-mono-kde.sh`, retaining inherited paths. Log out
+and back in, then reopen applications so they discover and load the style.
+Restore reinstates the previous style selection and environment script; the
+plugin file may remain dormant. Log out and back in after restoring as well.
+Layout-only installation leaves the style and environment unchanged.
 
 ## Plasma applets
 

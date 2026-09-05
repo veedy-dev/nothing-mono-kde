@@ -60,24 +60,24 @@ copy_tree() {
 
 install_dependencies() {
     if command -v pacman >/dev/null 2>&1; then
-        run sudo pacman -S --needed cmake gcc qt6-base fastfetch
+        run sudo pacman -S --needed cmake gcc qt6-base kio fastfetch
     elif command -v apt-get >/dev/null 2>&1; then
-        run sudo apt-get install -y cmake g++ qt6-base-dev
+        run sudo apt-get install -y cmake g++ qt6-base-dev libkf6kio-dev
         if apt-cache show fastfetch >/dev/null 2>&1; then
             run sudo apt-get install -y fastfetch
         else
             printf 'Note: Fastfetch is not available in the configured APT repositories.\n'
         fi
     elif command -v dnf >/dev/null 2>&1; then
-        run sudo dnf install -y cmake gcc-c++ qt6-qtbase-devel fastfetch
+        run sudo dnf install -y cmake gcc-c++ qt6-qtbase-devel kf6-kio-devel fastfetch
     elif command -v zypper >/dev/null 2>&1; then
         run sudo zypper --non-interactive install cmake gcc-c++ \
-            qt6-base-devel fastfetch
+            qt6-base-devel kf6-kio-devel fastfetch
     else
         cat >&2 <<'EOF'
 No supported package manager was detected.
-Install CMake, a C++ compiler, Qt 6 development files, and optionally
-Fastfetch, then rerun with --no-packages.
+Install CMake, a C++ compiler, Qt 6.7+ and KDE Frameworks KIO 6.21+ development files,
+and optionally Fastfetch, then rerun with --no-packages.
 EOF
         exit 1
     fi
@@ -196,6 +196,9 @@ else
             > "$config_home/plasma-workspace/env/nothing-mono-kde.sh"
         printf '%s\n' 'export QT_QUICK_CONTROLS_STYLE=org.kde.desktop' \
             >> "$config_home/plasma-workspace/env/nothing-mono-kde.sh"
+        printf 'export QT_PLUGIN_PATH=%q${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}\n' \
+            "$HOME/.local/lib/qt6/plugins" \
+            >> "$config_home/plasma-workspace/env/nothing-mono-kde.sh"
     fi
 
     run install -d "$data_home/fonts/NothingOS"
@@ -213,6 +216,15 @@ else
         "$repo_dir/install-fastfetch.sh"
     fi
     run fc-cache -f
+
+    printf '\n==> Building the targeted Dolphin style\n'
+    build_dir="$repo_dir/native/dolphin-style/build"
+    run cmake -S "$repo_dir/native/dolphin-style" -B "$build_dir" \
+        -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    run cmake --build "$build_dir" --parallel
+    run install -d "$HOME/.local/lib/qt6/plugins/styles"
+    run install -m 0755 "$build_dir/nothingos-dolphin-style.so" \
+        "$HOME/.local/lib/qt6/plugins/styles/nothingos-dolphin-style.so"
 
     printf '\n==> Building the independent widget edge controller\n'
     build_dir="$repo_dir/native/edge-groups/build"
@@ -247,7 +259,7 @@ EOF
     run kwriteconfig6 --file kdeglobals --group General --key ColorScheme \
         LetMinimalDark-Theme
     run kwriteconfig6 --file kdeglobals --group Icons --key Theme YAMIS
-    run kwriteconfig6 --file kdeglobals --group KDE --key widgetStyle Breeze
+    run kwriteconfig6 --file kdeglobals --group KDE --key widgetStyle NothingDolphin
     run kwriteconfig6 --file kdeglobals --group KDE --key AnimationDurationFactor 1
     for role in font menuFont toolBarFont; do
         run kwriteconfig6 --notify --file kdeglobals --group General --key "$role" \
@@ -378,6 +390,7 @@ systemctl --user unset-environment QML_IMPORT_PATH QT_QUICK_CONTROLS_STYLE 2>/de
 qdbus6 org.kde.KWin /KWin reconfigure 2>/dev/null || true
 systemctl --user restart plasma-plasmashell.service
 printf 'Restored KDE configuration from %s\\n' "\$backup_dir"
+printf 'Log out and back in, then reopen applications to reload the restored style and environment.\\n'
 EOF
     chmod 0755 "$install_root/restore-latest.sh"
 fi
