@@ -83,6 +83,19 @@ EOF
     fi
 }
 
+# GTK 2 rc and xsettingsd are not INI files: keep their native quoted syntax.
+set_font_line() {
+    local file="$1" pattern="$2" setting="$3"
+    printf '+ set %s in %q\n' "$setting" "$file"
+    $dry_run && return 0
+    install -d "$(dirname -- "$file")"
+    if [[ -f "$file" ]] && grep -qE "$pattern" "$file"; then
+        sed -i -E "s|$pattern.*|$setting|" "$file"
+    else
+        printf '\n%s\n' "$setting" >> "$file"
+    fi
+}
+
 if [[ "${XDG_CURRENT_DESKTOP:-}" != *KDE* && "${XDG_CURRENT_DESKTOP:-}" != *Plasma* ]]; then
     printf 'Warning: this does not appear to be a KDE Plasma session.\n' >&2
 fi
@@ -100,6 +113,24 @@ if [[ -n "$plasma_version" && "$plasma_version" -lt 6 ]]; then
         "$plasma_version" >&2
     exit 1
 fi
+if ! $dry_run; then
+    required_fonts=('NType 82 Headline')
+    if $layout_only; then required_fonts+=('Inter'); fi
+    for family in "${required_fonts[@]}"; do
+        if ! command -v fc-match >/dev/null 2>&1 \
+            || [[ "$(fc-match --format='%{family}' "$family")" != "$family" ]]; then
+            printf 'Required local font family missing: %s.\nInstall ntype82-headline.otf locally; Inter is bundled with the full installer but must already be installed for --layout-only. Run fc-cache -f, then retry. See README.md: Local font prerequisite.\n' "$family" >&2
+            exit 1
+        fi
+    done
+    if ! appgrid_available="$(qdbus6 org.kde.plasmashell /PlasmaShell \
+        org.kde.PlasmaShell.evaluateScript \
+        'print(knownWidgetTypes.indexOf("dev.xarbit.appgrid") !== -1);')" \
+        || [[ "$appgrid_available" != true ]]; then
+        printf 'AppGrid (dev.xarbit.appgrid) must be available in the running Plasma session.\nInstall it from https://appgrid.xarbit.dev/#install, then log out and back in before rerunning.\n' >&2
+        exit 1
+    fi
+fi
 if ! $assume_yes && ! $dry_run; then
     printf 'This will replace the current Plasma panels and desktop widgets.\n'
     read -r -p 'Continue after creating a backup? [y/N] ' answer
@@ -109,11 +140,22 @@ fi
 printf '\n==> Backing up KDE configuration to %s\n' "$backup_dir"
 run install -d "$backup_dir/config"
 for file in kdeglobals kcminputrc kglobalshortcutsrc kscreenlockerrc kwinrc \
-            plasmarc plasma-org.kde.plasma.desktop-appletsrc powerdevilrc; do
+            plasmarc plasma-org.kde.plasma.desktop-appletsrc powerdevilrc \
+            Trolltech.conf gtk-3.0/settings.ini gtk-4.0/settings.ini \
+            xsettingsd/xsettingsd.conf plasma-workspace/env/nothing-mono-kde.sh \
+            systemd/user/nothingos-edge-groups.service \
+            autostart/nothingos-edge-groups.desktop fastfetch/config.jsonc \
+            fastfetch/config.jsonc.before-nothingos; do
     if [[ -f "$config_home/$file" ]]; then
+        run install -d "$backup_dir/config/$(dirname -- "$file")"
         run cp -a "$config_home/$file" "$backup_dir/config/$file"
+    elif ! $dry_run; then
+        printf '%s\n' "$file" >> "$backup_dir/absent-config"
     fi
 done
+if [[ -f "$HOME/.gtkrc-2.0" ]]; then
+    run cp -a "$HOME/.gtkrc-2.0" "$backup_dir/gtk2rc"
+fi
 
 if $layout_only; then
     printf '\n==> Layout-only mode\n'
@@ -157,6 +199,7 @@ else
     fi
 
     run install -d "$data_home/fonts/NothingOS"
+    copy_tree "$repo_dir/fonts/inter" "$data_home/fonts/Inter"
     run install -m 0644 "$repo_dir/fonts/ndot.ttf" \
         "$data_home/fonts/NothingOS/ndot.ttf"
     run install -d "$data_home/wallpapers/NothingOS-Airplane/contents/images"
@@ -205,6 +248,26 @@ EOF
         LetMinimalDark-Theme
     run kwriteconfig6 --file kdeglobals --group Icons --key Theme YAMIS
     run kwriteconfig6 --file kdeglobals --group KDE --key widgetStyle Breeze
+    run kwriteconfig6 --file kdeglobals --group KDE --key AnimationDurationFactor 1
+    for role in font menuFont toolBarFont; do
+        run kwriteconfig6 --notify --file kdeglobals --group General --key "$role" \
+            'Inter,10,-1,5,50,0,0,0,0,0'
+    done
+    run kwriteconfig6 --notify --file kdeglobals --group General --key smallestReadableFont \
+        'Inter,9,-1,5,50,0,0,0,0,0'
+    run kwriteconfig6 --notify --file kdeglobals --group WM --key activeFont \
+        'Inter,10,-1,5,50,0,0,0,0,0'
+    run kwriteconfig6 --file Trolltech.conf --group qt --key font \
+        'Inter,10,-1,5,50,0,0,0,0,0'
+    run install -d "$config_home/gtk-3.0" "$config_home/gtk-4.0"
+    for version in 3.0 4.0; do
+        run kwriteconfig6 --file "$config_home/gtk-$version/settings.ini" \
+            --group Settings --key gtk-font-name 'Inter 10'
+    done
+    set_font_line "$HOME/.gtkrc-2.0" '^[[:space:]]*gtk-font-name[[:space:]]*=' \
+        'gtk-font-name="Inter 10"'
+    set_font_line "$config_home/xsettingsd/xsettingsd.conf" '^[[:space:]]*Gtk/FontName[[:space:]]+' \
+        'Gtk/FontName "Inter 10"'
     run kwriteconfig6 --file plasmarc --group Theme --key name \
         LetMinimalDark-Theme
     run kwriteconfig6 --file kcminputrc --group Mouse --key cursorTheme \
@@ -293,11 +356,20 @@ else
 set -euo pipefail
 backup_dir=$(printf '%q' "$backup_dir")
 config_home=$(printf '%q' "$config_home")
-for source in "\$backup_dir/config/"*; do
-    [[ -e "\$source" ]] || continue
-    cp -a "\$source" "\$config_home/\$(basename "\$source")"
-done
-rm -f "\$config_home/plasma-workspace/env/nothing-mono-kde.sh"
+home=$(printf '%q' "$HOME")
+install -d "\$config_home"
+cp -a "\$backup_dir/config/." "\$config_home/"
+if [[ -f "\$backup_dir/absent-config" ]]; then
+    while IFS= read -r file; do
+        rm -f "\$config_home/\$file"
+    done < "\$backup_dir/absent-config"
+fi
+if [[ -f "\$backup_dir/gtk2rc" ]]; then
+    install -d "\$home"
+    cp -a "\$backup_dir/gtk2rc" "\$home/.gtkrc-2.0"
+else
+    rm -f "\$home/.gtkrc-2.0"
+fi
 systemctl --user unset-environment QML_IMPORT_PATH QT_QUICK_CONTROLS_STYLE 2>/dev/null || true
 qdbus6 org.kde.KWin /KWin reconfigure 2>/dev/null || true
 systemctl --user restart plasma-plasmashell.service

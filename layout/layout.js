@@ -5,6 +5,11 @@ var WEATHER_CITY = "Jakarta";
 var WORLD_CLOCK_CITY = "TOKYO";
 var WORLD_CLOCK_ZONE = "Asia/Tokyo";
 
+// Fail before changing the desktop if the external launcher is unavailable.
+if (knownWidgetTypes.indexOf("dev.xarbit.appgrid") === -1) {
+    throw new Error("AppGrid (dev.xarbit.appgrid) is required. Install it from https://appgrid.xarbit.dev/#install, then log out and back in before applying this layout.");
+}
+
 function configure(widget, group, values) {
     widget.currentConfigGroup = group;
     for (var key in values) {
@@ -105,8 +110,17 @@ top.lengthMode = "fill";
 top.floating = false;
 top.hiding = "autohide";
 
-var launcher = top.addWidget("org.kde.plasma.kickoff");
-configure(launcher, ["General"], { icon: "start-here-kde" });
+var launcher = top.addWidget("dev.xarbit.appgrid");
+configure(launcher, ["General"], {
+    icon: "start-here-kde",
+    verticalOffset: 0,
+    gridColumns: 5,
+    backgroundOpacity: 100,
+    enableBlur: false,
+    openAnimation: 1,
+    hoverAnimation: 0,
+    startWithFavorites: false
+});
 
 var title = top.addWidget("org.kde.windowtitle");
 configure(title, ["Appearance"], {

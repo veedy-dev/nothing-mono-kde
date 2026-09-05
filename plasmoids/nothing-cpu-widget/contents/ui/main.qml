@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasma5support as P5Support
@@ -137,7 +138,7 @@ PlasmoidItem {
                         font.pixelSize: 12
                         font.letterSpacing: 3
                         font.weight: Font.Medium
-                        font.family: ndotFont.name
+                        font.family: Kirigami.Theme.defaultFont.family
                         opacity: 0.5
                         width: parent.width / 2
                     }

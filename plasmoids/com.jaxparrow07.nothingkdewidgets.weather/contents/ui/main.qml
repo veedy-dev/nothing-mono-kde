@@ -63,11 +63,6 @@ PlasmoidItem {
         source: Qt.resolvedUrl("../../../com.jaxparrow07.nothingkdewidgets.digitalclock/contents/fonts/ndot.ttf")
     }
 
-    FontLoader {
-        id: ndot55Font
-        source: Qt.resolvedUrl("../../../com.jaxparrow07.nothingkdewidgets.digitalclock/contents/fonts/ndot-55.otf")
-    }
-
     // Configuration properties
     property string location: plasmoid.configuration.location
     property int temperatureUnit: plasmoid.configuration.temperatureUnit
@@ -597,7 +592,7 @@ PlasmoidItem {
                     SquarePageOne {
                         colors: nColors
                         dotFontFamily: ndotFont.name
-                        labelFontFamily: ndot55Font.name
+                        labelFontFamily: Kirigami.Theme.defaultFont.family
                         currentTemp: root.currentTemp
                         weatherIconPath: root.weatherIconPath
                         isLoading: root.isLoading
@@ -608,7 +603,7 @@ PlasmoidItem {
                     SquarePageTwo {
                         colors: nColors
                         dotFontFamily: ndotFont.name
-                        labelFontFamily: ndot55Font.name
+                        labelFontFamily: Kirigami.Theme.defaultFont.family
                         highTemp: root.highTemp
                         lowTemp: root.lowTemp
                         condition: root.condition

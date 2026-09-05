@@ -34,18 +34,24 @@ function setWindowVisualRoles(window, enabled) {
     window.setData(Effect.WindowForceBlurRole, enabled);
     window.setData(Effect.WindowForceBackgroundContrastRole, enabled);
 }
-
+function cancelOpening(window) {
+    if (window.scaleInAnimation) cancel(window.scaleInAnimation);
+    if (window.opacityInAnimation) cancel(window.opacityInAnimation);
+    delete window.scaleInAnimation;
+    delete window.opacityInAnimation;
+    setWindowVisualRoles(window, null);
+}
 var bounceWindowsEffect = {
-    openDuration: 250,
-    closeDuration: 90,
-    scaleInFactor: 0.8,
-    scaleOutFactor: 0.92,
+    openDuration: 500,
+    closeDuration: 240,
+    scaleInFactor: 0.9,
+    scaleOutFactor: 0.96,
 
     loadConfig: function () {
         // Wrapped in parse functions so KWin doesn't accidentally pass strings to the animation engine
-        this.openDuration = parseInt(effect.readConfig("OpenDuration", 250), 10);
-        this.closeDuration = parseInt(effect.readConfig("CloseDuration", 90), 10);
-        this.scaleInFactor = parseFloat(effect.readConfig("ScaleInFactor", 0.8));
+        this.openDuration = parseInt(effect.readConfig("OpenDuration", 500), 10);
+        this.closeDuration = parseInt(effect.readConfig("CloseDuration", 240), 10);
+        this.scaleInFactor = parseFloat(effect.readConfig("ScaleInFactor", 0.9));
     },
 
     slotWindowAdded: function (window) {
@@ -65,7 +71,7 @@ var bounceWindowsEffect = {
 
         window.scaleInAnimation = animate({
             window: window,
-            curve: QEasingCurve.OutBack,
+            curve: QEasingCurve.OutQuint,
             duration: animationTime(bounceWindowsEffect.openDuration),
             type: Effect.Scale,
             from: bounceWindowsEffect.scaleInFactor,
@@ -83,6 +89,8 @@ var bounceWindowsEffect = {
     },
 
     slotWindowClosed: function (window) {
+        // Opening must release its visual roles even if another effect owns the exit.
+        if (window.scaleInAnimation || window.opacityInAnimation) cancelOpening(window);
         if (effects.hasActiveFullScreenEffect) {
             return;
         }
@@ -97,7 +105,7 @@ var bounceWindowsEffect = {
 
         window.scaleOutAnimation = animate({
             window: window,
-            curve: QEasingCurve.InCubic,
+            curve: QEasingCurve.OutCubic,
             duration: animationTime(bounceWindowsEffect.closeDuration),
             type: Effect.Scale,
             from: 1.0,
@@ -106,7 +114,7 @@ var bounceWindowsEffect = {
 
         window.opacityOutAnimation = animate({
             window: window,
-            curve: QEasingCurve.InCubic,
+            curve: QEasingCurve.OutCubic,
             duration: animationTime(bounceWindowsEffect.closeDuration),
             type: Effect.Opacity,
             from: 1.0,
@@ -115,18 +123,22 @@ var bounceWindowsEffect = {
     },
 
     slotWindowDataChanged: function (window, role) {
+        if (!effect.isGrabbed(window, role)) return;
         if (role === Effect.WindowAddedGrabRole) {
-            if (window.scaleInAnimation) cancel(window.scaleInAnimation);
-            if (window.opacityInAnimation) cancel(window.opacityInAnimation);
+            if (window.scaleInAnimation || window.opacityInAnimation) cancelOpening(window);
         } else if (role === Effect.WindowClosedGrabRole) {
             if (window.scaleOutAnimation) cancel(window.scaleOutAnimation);
             if (window.opacityOutAnimation) cancel(window.opacityOutAnimation);
+            delete window.scaleOutAnimation;
+            delete window.opacityOutAnimation;
         }
     },
 
     init: function () {
         this.loadConfig();
-
+        effect.animationEnded.connect(function(window) {
+            setWindowVisualRoles(window, null);
+        });
         // CRITICAL FIX: This must be 'effect' (singular), not 'effects'
         effect.configChanged.connect(function() {
             bounceWindowsEffect.loadConfig();

@@ -16,6 +16,7 @@ screen geometry instead of being tied to one monitor.
 
 - a responsive desktop layout for 16:9, 21:9, and 32:9 screens
 - an OLED-black status bar and a content-sized application dock
+- a centered AppGrid application launcher with an opaque monochrome background
 - independently hiding left and right widget groups
 - configurable weather, world clock, calendar, notes, system monitoring, and
   media controls
@@ -41,10 +42,57 @@ The screenshot shows the 5120×1440 reference layout. On a regular 16:9
 display, the same widgets stay anchored to the left and right edges with
 scaled sizes and margins, leaving the center available for windows.
 
-Dependency installation is automatic on Arch-based, Debian/Ubuntu-based,
+Build dependency installation is automatic on Arch-based, Debian/Ubuntu-based,
 Fedora, and openSUSE systems. On another distribution, install CMake, a C++
 compiler, Qt 6 development files, and optionally Fastfetch, then run the
 installer with `--no-packages`.
+
+**AppGrid is an external prerequisite**, not bundled or installed by this script.
+Install it using the [official distro or user-local universal instructions](https://appgrid.xarbit.dev/#install),
+then log out and back in so the running Plasma session discovers it. The
+version exercised for this integration is **1.9.3**. The installer checks for
+`dev.xarbit.appgrid` before backups or changes (except during `--dry-run`);
+it stops if unavailable rather than falling back to Kickoff.
+
+Already using this theme? No full installer rerun is needed: right-click the
+existing launcher → **Show Alternatives → AppGrid** (not AppGrid Panel). In
+AppGrid settings, retain the `start-here-kde` icon and set vertical offset to
+0 (centered), grid columns to 5, background opacity to 100%, blur off, hover
+animation to None, and start with favorites off. Other settings stay native.
+
+## Local font prerequisite
+
+Inter 4.1 is bundled under `fonts/inter` and installed automatically by the
+full installer. It is the general UI font; NType 82 is not used for body text.
+
+Install **NType 82 Headline** yourself, for your user only, before running the
+installer. This decorative calendar-heading font is not bundled or downloaded
+by the installer. Upstream describes it as personal/noncommercial; review its
+terms before use. The reference source is [Nothing KDE Widgets, `1-common/fonts`](https://github.com/jaxparrow07/nothing-kde-widgets/tree/4c1ae8752bb3cf5c8abba0b897631d3a695973f2/1-common/fonts)
+at commit `4c1ae8752bb3cf5c8abba0b897631d3a695973f2`.
+
+Once you have a local copy of `ntype82-headline.otf`:
+
+```bash
+font_dir="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/NothingOS"
+install -d "$font_dir"
+install -m 0644 /path/to/ntype82-headline.otf "$font_dir/"
+fc-cache -f
+fc-match --format='%{family}\n' 'NType 82 Headline'
+```
+
+The last command must return exactly `NType 82 Headline`, not a substitute.
+The installer rejects a missing Headline family before any backup or change.
+Layout-only mode also requires Inter to be installed already because it does
+not install assets. Dry-run skips these checks.
+
+KDE body, menu, toolbar and title fonts use Inter at 10pt; the smallest readable
+font is 9pt. General widget text inherits the theme font. NType 82 Headline is
+decorative-only for the calendar heading; NDot remains on clocks. Existing
+terminal/monospace preferences are left alone. Qt legacy, GTK 2/3/4 and
+xsettingsd receive matching Inter 10 settings; other toolkit preferences are
+preserved. GTK 2 uses `~/.gtkrc-2.0`; if you override `GTK2_RC_FILES`,
+ensure that file is included in your override.
 
 ## Install
 
@@ -64,11 +112,15 @@ Useful modes:
 ./install.sh --layout-only    # reinstall only the Plasma layout
 ```
 
-The installer backs up affected KDE files under:
+The installer backs up affected KDE and toolkit configuration files under:
 
 ```text
 ~/.local/state/nothingos-kde-rice/backups/<timestamp>/
 ```
+
+Nested toolkit files and `~/.gtkrc-2.0` are included. Restore also removes
+configuration files that were absent before installation. Installed theme
+assets and user-local fonts are not uninstalled by the restore helper.
 
 Restore the most recent backup with:
 
@@ -78,6 +130,13 @@ Restore the most recent backup with:
 
 Log out and back in once after installation so KWin, fonts, and autostarted
 services are all loaded consistently.
+
+Motion is a Nothing-inspired adaptation to KDE, not a full Nothing OS shell
+replacement. Window opening uses a 500ms OutQuint scale with OutCubic fade;
+closing uses 240ms OutCubic. The installer sets KDE AnimationDurationFactor to 1, including
+when a previous setup disabled animation; later changes to KDE animation
+speed scale the effect. AppGrid retains its own fade. No Dynamic Island is
+installed.
 
 ## Fastfetch only
 

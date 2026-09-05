@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
+import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.workspace.dbus as DBus
@@ -418,7 +419,7 @@ PlasmoidItem {
                 anchors.verticalCenter: parent.verticalCenter
                 rightPadding: compactItem.height * 0.08
                 text: root.cityAbbrev
-                font.family: ndot55Font.name
+                font.family: Kirigami.Theme.defaultFont.family
                 font.pixelSize: compactItem.height * 0.3
                 color: nColors.textSecondary
             }
@@ -675,7 +676,7 @@ PlasmoidItem {
                                 Layout.alignment: Qt.AlignLeft | Qt.AlignTop
                                 Layout.topMargin: 5
                                 text: root.cityName
-                                font.family: ndot55Font.name
+                                font.family: Kirigami.Theme.defaultFont.family
                                 font.pixelSize: Math.min(parent.width * 0.13, parent.height * 0.13)
                                 color: nColors.textPrimary
                                 opacity: 0.9
@@ -739,7 +740,7 @@ PlasmoidItem {
                                 Layout.alignment: Qt.AlignLeft | Qt.AlignTop
                                 Layout.topMargin: 5
                                 text: root.dayOfWeek
-                                font.family: ndot55Font.name
+                                font.family: Kirigami.Theme.defaultFont.family
                                 font.pixelSize: Math.min(parent.width * 0.13, parent.height * 0.13)
                                 color: nColors.textPrimary
                                 opacity: 0.9
@@ -837,7 +838,7 @@ PlasmoidItem {
                     anchors.leftMargin: parent.radius * 0.5
                     anchors.topMargin: parent.height * 0.12
                     text: root.cityAbbrev
-                    font.family: ndot55Font.name
+                    font.family: Kirigami.Theme.defaultFont.family
                     font.pixelSize: parent.height * 0.18
                     color: nColors.textSecondary
                     opacity: 0.8

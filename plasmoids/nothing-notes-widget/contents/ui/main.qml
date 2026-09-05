@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
+import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.workspace.dbus as DBus
@@ -42,11 +43,6 @@ PlasmoidItem {
 
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
     preferredRepresentation: fullRepresentation
-
-    FontLoader {
-        id: ndotFont
-        source: Qt.resolvedUrl("../../../com.jaxparrow07.nothingkdewidgets.digitalclock/contents/fonts/ndot.ttf")
-    }
 
     property var notes: []
     property int activeIndex: 0
@@ -157,7 +153,7 @@ PlasmoidItem {
                         text: root.notes.length > 0 ? root.notes[root.activeIndex].title : ""
                         placeholderText: "Title"
                         font.pixelSize: 20
-                        font.family: ndotFont.name
+                        font.family: Kirigami.Theme.defaultFont.family
                         font.letterSpacing: 1
                         color: "#ffffff"
                         placeholderTextColor: "#444"
@@ -251,6 +247,7 @@ PlasmoidItem {
                         text: root.notes.length > 0 ? root.notes[root.activeIndex].body : ""
                         placeholderText: "Start typing...\n\nTip: use • for bullet points"
                         font.pixelSize: 13
+                        font.family: Kirigami.Theme.defaultFont.family
                         color: "#dddddd"
                         placeholderTextColor: "#333"
                         leftPadding: 20
@@ -319,8 +316,8 @@ PlasmoidItem {
                                         id: tabTxt
                                         anchors.centerIn: parent
                                         text: modelData.title || "Note"
-                                        font.pixelSize: 9
-                                        font.family: ndotFont.name
+                                        font.pixelSize: 12
+                                        font.family: Kirigami.Theme.defaultFont.family
                                         font.letterSpacing: 1
                                         color: index === root.activeIndex ? "#111111" : "#555555"
                                         Behavior on color { ColorAnimation { duration: 150 } }

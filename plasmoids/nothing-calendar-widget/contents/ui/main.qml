@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.workspace.dbus as DBus
@@ -150,10 +151,10 @@ PlasmoidItem {
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: root.monthNames[root.viewMonth]
                             color: "#ffffff"
-                            font.pixelSize: 16
-                            font.letterSpacing: 4
-                            font.weight: Font.Bold
-                            font.family: ndotFont.name
+                            font.pixelSize: 18
+                            font.letterSpacing: 1
+                            font.weight: Font.Normal
+                            font.family: "NType 82 Headline"
                         }
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
@@ -161,7 +162,7 @@ PlasmoidItem {
                             color: "#ffffff"
                             font.pixelSize: 12
                             font.letterSpacing: 2
-                            font.family: ndotFont.name
+                            font.family: Kirigami.Theme.defaultFont.family
                             opacity: 0.35
                         }
                     }
@@ -204,7 +205,7 @@ PlasmoidItem {
                             color: index >= 5 ? "#555555" : "#444444"
                             font.pixelSize: 10
                             font.letterSpacing: 1
-                             font.family: ndotFont.name
+                            font.family: Kirigami.Theme.defaultFont.family
                             horizontalAlignment: Text.AlignHCenter
                         }
                     }
@@ -267,7 +268,7 @@ PlasmoidItem {
                                 text: day > 0 ? day : ""
                                 color: isToday ? "#111111" : "#ffffff"
                                 font.pixelSize: 14
-                                font.family: ndotFont.name
+                                font.family: Kirigami.Theme.defaultFont.family
                                 font.weight: isToday ? Font.DemiBold : Font.Normal
                                 opacity: {
                                     if (day === 0) return 0

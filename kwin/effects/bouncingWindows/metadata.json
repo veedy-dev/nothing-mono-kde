@@ -8,11 +8,11 @@
             }
         ],
         "Category": "Window Open/Close Animation",
-        "Description": "Animate window open/close with a blur-compatible bounce effect",
+        "Description": "Smoothly scale and fade windows when opening and closing",
         "EnabledByDefault": false,
         "Id": "bouncingWindows",
         "License": "GPL",
-        "Name": "Bouncing Windows",
+        "Name": "Smooth Windows",
         "HasConfig": true
     },
     "X-KDE-Ordering": 60,

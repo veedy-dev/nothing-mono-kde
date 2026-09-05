@@ -6,13 +6,13 @@
     <kcfgfile name="kwinrc"/>
     <group name="Effect-bouncingWindows">
         <entry name="OpenDuration" type="Int">
-            <default>250</default>
+            <default>500</default>
         </entry>
         <entry name="CloseDuration" type="Int">
-            <default>90</default>
+            <default>240</default>
         </entry>
         <entry name="ScaleInFactor" type="Double">
-            <default>0.8</default>
+            <default>0.9</default>
         </entry>
     </group>
 </kcfg>

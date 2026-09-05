@@ -29,7 +29,7 @@
      <item row="0" column="0">
       <widget class="QLabel" name="labelOpen">
        <property name="text">
-        <string>Open Duration:</string>
+        <string>Opening duration:</string>
        </property>
       </widget>
      </item>
@@ -54,7 +54,7 @@
        </property>
 
        <property name="value">
-        <number>250</number>
+        <number>500</number>
        </property>
 
        <property name="suffix">
@@ -68,7 +68,7 @@
      <item row="1" column="0">
       <widget class="QLabel" name="labelClose">
        <property name="text">
-        <string>Close Duration:</string>
+        <string>Closing duration:</string>
        </property>
       </widget>
      </item>
@@ -88,7 +88,7 @@
         <number>10</number>
        </property>
        <property name="value">
-        <number>90</number>
+        <number>240</number>
        </property>
        <property name="suffix">
         <string> ms</string>
@@ -101,7 +101,7 @@
      <item row="2" column="0">
       <widget class="QLabel" name="labelScaleIn">
        <property name="text">
-        <string>Start Scale (Open):</string>
+        <string>Opening start scale:</string>
        </property>
       </widget>
      </item>
@@ -130,7 +130,7 @@
        </property>
 
        <property name="value">
-        <double>0.800000000000000</double>
+        <double>0.900000000000000</double>
        </property>
 
       </widget>
