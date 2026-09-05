@@ -279,7 +279,11 @@ EOF
         --key HideOnTyping --type bool false
     run kwriteconfig6 --file kwinrc --group Effect-hidecursor \
         --key InactivityDuration 15
-    for plugin in bouncingWindows hidecursor minimizeall nothingos-edge-groups; do
+    run kwriteconfig6 --file kwinrc --group Effect-slidingpopups \
+        --key SlideInTime 500
+    run kwriteconfig6 --file kwinrc --group Effect-slidingpopups \
+        --key SlideOutTime 240
+    for plugin in bouncingWindows slidingpopups hidecursor minimizeall nothingos-edge-groups; do
         run kwriteconfig6 --file kwinrc --group Plugins \
             --key "${plugin}Enabled" --type bool true
     done

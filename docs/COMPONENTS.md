@@ -50,12 +50,15 @@ on the launcher and apply those settings; do not rerun the full installer.
   500ms OutQuint opening scale .9→1 and OutCubic fade; 240ms OutCubic closing
   scale 1→.96 and fade
 - KDE AnimationDurationFactor: 1 on install; subsequent KDE speed changes
-  scale the window effect. AppGrid keeps its native fade
+  scale both the window and native slide effects. AppGrid keeps its native fade
 - Hide Cursor at 15 seconds
 - custom edge-group controller: left and right widget columns independently
   hide after 10 seconds away from the group and return when the pointer reaches
   the corresponding screen edge
-- top and bottom panels use Plasma's independent auto-hide
+- top and bottom panels use Plasma's independent auto-hide. Native Sliding
+  Popups uses 500ms in / 240ms out to match the window timing; this also applies
+  to other Plasma surfaces using that effect. KWin retains its built-in
+  OutCubic entrance / InCubic exit, edge translation, and Plasma's hide delay
 - PowerDevil turns the display off after 60 seconds on AC
 
 No black-overlay screensaver is installed. Native display power management is
