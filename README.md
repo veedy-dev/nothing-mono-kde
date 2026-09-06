@@ -60,6 +60,70 @@ AppGrid settings, retain the `start-here-kde` icon and set vertical offset to
 0 (centered), grid columns to 5, background opacity to 100%, blur off, hover
 animation to None, and start with favorites off. Other settings stay native.
 
+## AppGrid panel input fix
+
+For AppGrid 1.9.3 on Plasma 6.7 Wayland, the optional standalone fix keeps the
+centered fullscreen overlay and outside-click dismissal, but excludes actual
+Plasma panel windows from its normal input region so dock clicks reach the dock.
+Native launcher styling, animations, and drag-out behavior are retained.
+
+First install the official **user-local universal AppGrid** and log out and back
+in. The script requires its existing center binary at
+`~/.local/lib/qt6/plugins/plasma/applets/dev.xarbit.appgrid.so`, that plugin root
+in `QT_PLUGIN_PATH`, and AppGrid discovery in the running Plasma session. It
+does not install AppGrid from scratch or set up plugin discovery.
+
+Install Git, CMake, a C++20 compiler/build tool, and the
+[upstream development dependencies](https://appgrid.xarbit.dev/docs/#dependencies-per-distro)
+first; see also the [1.9.3 build prerequisites](https://github.com/xarbit/plasma6-applet-appgrid/tree/v1.9.3#build-from-source).
+These include Qt 6 Quick/Gui/DBus/Network, ECM, KDE Frameworks 6, Plasma and
+PlasmaQuick, LayerShellQt, Plasma Activities/Stats, and AppStreamQt. CMake
+reports missing development packages; the script never runs a package manager
+or sudo. The full theme installer does not install these extra dependencies.
+
+```bash
+./install-appgrid-fix.sh --dry-run   # offline plan, no changes
+./install-appgrid-fix.sh             # build and replace only the center binary
+```
+
+The script clones the official repository at `v1.9.3`, verifies commit
+`7843b094d6a2f1b7f9d02df1f67fa5f1fd0a7053`, and applies
+`patches/appgrid-panel-input.patch` in a fresh temporary workspace (removed on
+exit). Existing source checkouts are never reset or modified. It builds only
+`dev.xarbit.appgrid`, labels it `1.9.3+panel-input-fix`, disables tests, and keeps
+the universal build's opt-in update checker. Before atomic replacement it saves
+the previous binary under
+`${XDG_STATE_HOME:-$HOME/.local/state}/nothingos-kde-rice/backups/appgrid.<unique suffix>/`.
+Backups stay outside Qt plugin discovery; atomic staging uses a hidden file.
+The running shell continues mapping the old binary safely until restarted.
+The `.panel` variant, AppGrid settings, session environment, and manifests are
+untouched. No shell restart or layout change is automatic.
+
+**After installation:** log out and back in, or in a systemd-managed Plasma
+session run `systemctl --user restart plasma-plasmashell.service`. Do not rerun
+the full installer or layout script. To restore, use the exact printed backup
+path (not the full theme restore helper), stage beside the plugin, and rename
+atomically; never overwrite the mapped binary in place:
+
+```bash
+backup=/exact/printed/backup/path/dev.xarbit.appgrid.so
+plugin="$HOME/.local/lib/qt6/plugins/plasma/applets/dev.xarbit.appgrid.so"
+staged="$(mktemp "${plugin%/*}/.dev.xarbit.appgrid.so.restore.XXXXXXXX")"
+if install -m 0755 -- "$backup" "$staged" && mv -fT -- "$staged" "$plugin"; then
+    printf 'Restored; log out and back in to reload Plasma.\n'
+else
+    rm -f -- "$staged"
+    printf 'Restore failed; the backup is unchanged.\n' >&2
+fi
+```
+
+An upstream AppGrid update may overwrite this local fix. Check whether the
+new release already fixes panel input before rebuilding; this script always
+builds **1.9.3**, so rerunning after an upgrade would replace the center binary
+with that older version. A Qt/Plasma ABI upgrade may also require a rebuild
+against the new development files. Keep the upstream package and local fix
+version compatible rather than blindly reapplying the patch to newer sources.
+
 ## Local font prerequisite
 
 Inter 4.1 is bundled under `fonts/inter` and installed automatically by the

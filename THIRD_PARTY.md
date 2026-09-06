@@ -20,7 +20,14 @@ components used by the rice. Copyright remains with each upstream author.
 
 AppGrid is installed separately using its [official distro or user-local
 universal instructions](https://appgrid.xarbit.dev/#install). This repository
-configures the centered launcher but does not redistribute its package.
+configures the centered launcher but does not redistribute its package. It
+also carries a GPL-2.0-or-later source patch at
+`patches/appgrid-panel-input.patch` for official tag `v1.9.3`, commit
+`7843b094d6a2f1b7f9d02df1f67fa5f1fd0a7053`. The optional
+`install-appgrid-fix.sh` downloads that exact upstream source and builds a
+user-local center-only binary labeled `1.9.3+panel-input-fix`; upstream
+copyright and licensing remain applicable. See README.md for installation
+and update caveats.
 
 Inter is bundled in `fonts/inter` from the official [rsms/inter v4.1 release](https://github.com/rsms/inter/releases/tag/v4.1).
 These are the static text-family TTFs (not Inter Display): Regular, Medium,

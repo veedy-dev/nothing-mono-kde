@@ -60,6 +60,17 @@ universal instructions](https://appgrid.xarbit.dev/#install), then log out and
 back in. On an existing themed desktop, use **Show Alternatives → AppGrid**
 on the launcher and apply those settings; do not rerun the full installer.
 
+Optional local Wayland panel-input fix: `install-appgrid-fix.sh` applies
+`patches/appgrid-panel-input.patch` to official AppGrid `v1.9.3`, commit
+`7843b094d6a2f1b7f9d02df1f67fa5f1fd0a7053`. The center-only binary is labeled
+`1.9.3+panel-input-fix`; the universal update checker remains enabled. Its
+fullscreen input region excludes real Plasma panel geometries while preserving
+outside-click dismissal elsewhere and the existing drag-out region. Centered
+layout, styling, and animations remain native. The standalone build/install
+requires an existing user-local AppGrid and plugin path; it backs up and
+atomically replaces only the center binary, without restarting Plasma. See
+the [build, reload, and update caveats](../README.md#appgrid-panel-input-fix).
+
 ## KWin and OLED behavior
 
 - Smooth Windows (stable `bouncingWindows` plugin ID): KDE adaptation with

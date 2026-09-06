@@ -1,0 +1,465 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -170,6 +170,7 @@
+ set(APPGRID_COMMON_SOURCES
+     src/appgridplugin.cpp
+     src/appgridplugin.h
++    src/overlayinputregion.h
+     src/appstreamresolver.cpp
+     src/appstreamresolver.h
+     src/appmodel.cpp
+diff --git a/src/appgridplugin.cpp b/src/appgridplugin.cpp
+--- a/src/appgridplugin.cpp
++++ b/src/appgridplugin.cpp
+@@ -9,6 +9,7 @@
+ #include "appstreamresolver.h"
+ #include "discoverbackends.h"
+ #include "pluginhelpers.h"
++#include "overlayinputregion.h"
+ 
+ #include <KConfigGroup>
+ #include <KDesktopFile>
+@@ -327,6 +328,10 @@
+ 
+     if (KWindowSystem::isPlatformWayland()) {
+         configureWayland(window);
++        if (!window->findChild<OverlayInputRegion *>()) {
++            auto *input = new OverlayInputRegion(window);
++            connect(input, &OverlayInputRegion::panelPressed, this, &AppGridPlugin::panelPressed, Qt::QueuedConnection);
++        }
+     }
+ #ifdef APPGRID_X11_SUPPORT
+     else {
+@@ -485,6 +490,15 @@
+     if (!window) {
+         return;
+     }
++    if (KWindowSystem::isPlatformWayland()) {
++        auto *input = window->findChild<OverlayInputRegion *>();
++        if (!input) {
++            input = new OverlayInputRegion(window);
++            connect(input, &OverlayInputRegion::panelPressed, this, &AppGridPlugin::panelPressed, Qt::QueuedConnection);
++        }
++        input->setDragRect(QRect(x, y, w, h));
++        return;
++    }
+ 
+     if (w <= 0 || h <= 0) {
+         // Empty region = "remove mask" per Qt docs, restores full-window input.
+diff --git a/src/appgridplugin.h b/src/appgridplugin.h
+--- a/src/appgridplugin.h
++++ b/src/appgridplugin.h
+@@ -8,6 +8,7 @@
+ #include <KConfigWatcher>
+ #include <Plasma/Applet>
+ #include <QRect>
++#include <QPointF>
+ 
+ #include <memory>
+ 
+@@ -113,8 +114,8 @@
+      * Restrict pointer input on @p window to the rectangle (x,y,w,h). The
+      * rest of the window becomes pass-through — events fall through to the
+      * surface below (e.g. the panel/taskbar/desktop under our full-screen
+-     * layer overlay). If @p w or @p h is zero, the mask is cleared and the
+-     * entire window receives input again.
++     * layer overlay). If @p w or @p h is zero, normal input is restored:
++     * fullscreen except visible Plasma panels on Wayland; full on X11.
+      *
+      * Used while a drag-out is in flight: the centred grid panel keeps full
+      * input (so internal favorites reorder still works) while the surrounding
+@@ -198,6 +199,7 @@
+     Q_INVOKABLE QVariantMap systemInfo();
+ 
+ Q_SIGNALS:
++    void panelPressed(QWindow *window, const QPointF &globalPosition);
+     /**
+      * Emitted when the user triggers the secondary "Open in Compact Mode"
+      * global shortcut. Ships unbound; user assigns the key in System
+diff --git a/src/overlayinputregion.h b/src/overlayinputregion.h
+new file mode 100644
+--- /dev/null
++++ b/src/overlayinputregion.h
+@@ -0,0 +1,113 @@
++/*
++    SPDX-FileCopyrightText: 2026 AppGrid Contributors
++    SPDX-License-Identifier: GPL-2.0-or-later
++*/
++#pragma once
++
++#include <QEvent>
++#include <QGuiApplication>
++#include <QRegion>
++#include <QMouseEvent>
++#include <QScreen>
++#include <QTimer>
++#include <QWindow>
++
++// Wayland only: QWindow::setMask changes the input region there, but also
++// clips the visible window on X11. Owned by the fullscreen layer-shell window.
++class OverlayInputRegion : public QObject
++{
++    Q_OBJECT
++public:
++    explicit OverlayInputRegion(QWindow *window)
++        : QObject(window)
++        , m_window(window)
++    {
++        qGuiApp->installEventFilter(this);
++        connect(window, &QWindow::screenChanged, this, &OverlayInputRegion::watchScreen);
++        watchScreen(window->screen());
++    }
++
++    void setDragRect(const QRect &rect)
++    {
++        m_dragRect = rect;
++        refresh();
++    }
++
++Q_SIGNALS:
++    void panelPressed(QWindow *window, const QPointF &globalPosition);
++
++private:
++    void watchScreen(QScreen *screen)
++    {
++        disconnect(m_screenConnection);
++        if (screen) {
++            m_screenConnection = connect(screen, &QScreen::geometryChanged, this, [this]() { refresh(); });
++        }
++        refresh();
++    }
++
++    void refresh()
++    {
++        if (!m_dragRect.isEmpty()) {
++            m_window->setMask(QRegion(m_dragRect));
++            return;
++        }
++        QRegion region(QRect(QPoint(), m_window->size()));
++        if (auto *screen = m_window->screen()) {
++            // All-edge anchors and exclusiveZone=-1 put our surface at the
++            // output origin. Wayland QWindow::position() need not reflect it.
++            const QPoint origin = screen->geometry().topLeft();
++            const auto windows = QGuiApplication::allWindows();
++            for (auto *panel : windows) {
++                if (panel == m_window || !panel->inherits("PanelView")) {
++                    continue;
++                }
++                connect(panel, &QWindow::screenChanged, this, &OverlayInputRegion::refresh, Qt::UniqueConnection);
++                if (panel->isVisible() && panel->screen() == screen) {
++                    region -= panel->geometry().translated(-origin);
++                }
++            }
++        }
++        // Qt treats an empty mask as unrestricted, not as empty input.
++        if (region.isEmpty()) {
++            region = QRegion(-1, -1, 1, 1);
++        }
++        m_window->setMask(region);
++    }
++
++    bool eventFilter(QObject *object, QEvent *event) override
++    {
++        switch (event->type()) {
++        case QEvent::MouseButtonPress:
++            if (m_window->isVisible() && m_dragRect.isEmpty() && object->inherits("PanelView")
++                && static_cast<QWindow *>(object)->screen() == m_window->screen()
++                && static_cast<QMouseEvent *>(event)->button() == Qt::LeftButton) {
++                Q_EMIT panelPressed(m_window, static_cast<QMouseEvent *>(event)->globalPosition());
++            }
++            break;
++        case QEvent::Move:
++        case QEvent::Resize:
++        case QEvent::Show:
++        case QEvent::Hide:
++        case QEvent::PlatformSurface:
++            if ((object == m_window || object->inherits("PanelView")) && !m_refreshPending) {
++                // Show/hide and platform-surface events may precede the new
++                // public state. Coalesce until after the event is delivered.
++                m_refreshPending = true;
++                QTimer::singleShot(0, this, [this]() {
++                    m_refreshPending = false;
++                    refresh();
++                });
++            }
++            break;
++        default:
++            break;
++        }
++        return false;
++    }
++
++    QWindow *const m_window;
++    QRect m_dragRect;
++    QMetaObject::Connection m_screenConnection;
++    bool m_refreshPending = false;
++};
+diff --git a/tests/CMakeLists.txt b/tests/CMakeLists.txt
+--- a/tests/CMakeLists.txt
++++ b/tests/CMakeLists.txt
+@@ -28,6 +28,12 @@
+ )
+ 
+ include_directories(${CMAKE_SOURCE_DIR}/src)
++
++add_executable(test_overlayinputregion test_overlayinputregion.cpp
++    ${CMAKE_SOURCE_DIR}/src/overlayinputregion.h)
++target_link_libraries(test_overlayinputregion PRIVATE Qt6::Test Qt6::Gui)
++add_test(NAME test_overlayinputregion COMMAND test_overlayinputregion)
++set_tests_properties(test_overlayinputregion PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+ 
+ # Helper: defines a Qt test executable and registers it with CTest.
+ # Pass extra headers (e.g. Q_OBJECT-containing helpers) as ARGN so AUTOMOC
+diff --git a/tests/test_overlayinputregion.cpp b/tests/test_overlayinputregion.cpp
+new file mode 100644
+--- /dev/null
++++ b/tests/test_overlayinputregion.cpp
+@@ -0,0 +1,130 @@
++/*
++    SPDX-FileCopyrightText: 2026 AppGrid Contributors
++    SPDX-License-Identifier: GPL-2.0-or-later
++*/
++#include "overlayinputregion.h"
++#include <QTest>
++#include <QTemporaryFile>
++#include <QSignalSpy>
++
++// Exercise Qt's actual window geometry, visibility, events and masks without
++// depending on Plasma's private PanelView headers or a running desktop shell.
++class PanelView : public QWindow
++{
++    Q_OBJECT
++public:
++    QMouseEvent *lastPress = nullptr;
++protected:
++    void mousePressEvent(QMouseEvent *event) override { lastPress = event; }
++};
++
++class TestOverlayInputRegion : public QObject
++{
++    Q_OBJECT
++private Q_SLOTS:
++    void panelHolesAndDragTransitions()
++    {
++        QCOMPARE(QGuiApplication::screens().size(), 2);
++        QWindow overlay;
++        overlay.setScreen(QGuiApplication::screens().at(1));
++        overlay.setFlags(Qt::FramelessWindowHint);
++        overlay.setGeometry(37, 53, 800, 600); // Layer-shell position is not the output origin.
++        overlay.show();
++        OverlayInputRegion input(&overlay);
++        const QPoint origin = overlay.screen()->geometry().topLeft();
++        PanelView panel;
++        panel.setFlags(Qt::FramelessWindowHint);
++        panel.setGeometry(QRect(origin + QPoint(200, 550), QSize(400, 50)));
++        panel.show();
++        QTRY_VERIFY(!overlay.mask().contains(QPoint(300, 575)));
++        QVERIFY(overlay.mask().contains(QPoint(100, 575))); // Outside click beside the dock.
++        QVERIFY(overlay.mask().contains(QPoint(300, 300))); // Launcher remains interactive.
++
++        QSignalSpy dismissals(&input, &OverlayInputRegion::panelPressed);
++        QMouseEvent press(QEvent::MouseButtonPress, QPointF(20, 20), QPointF(220, 570),
++                          Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
++        QCoreApplication::sendEvent(&panel, &press);
++        QCOMPARE(panel.lastPress, &press); // The original press reaches the dock, without replay.
++        QCOMPARE(dismissals.count(), 1);
++        QCOMPARE(qvariant_cast<QWindow *>(dismissals.at(0).at(0)), &overlay);
++        QCOMPARE(dismissals.at(0).at(1).toPointF(), press.globalPosition());
++        QMouseEvent rightPress(QEvent::MouseButtonPress, QPointF(20, 20), QPointF(220, 570),
++                               Qt::RightButton, Qt::RightButton, Qt::NoModifier);
++        QCoreApplication::sendEvent(&panel, &rightPress);
++        QCOMPARE(panel.lastPress, &rightPress);
++        QCOMPARE(dismissals.count(), 1);
++
++        QWindow unrelated;
++        unrelated.setGeometry(QRect(origin + QPoint(20, 20), QSize(100, 100)));
++        unrelated.show();
++        QCoreApplication::processEvents();
++        QVERIFY(overlay.mask().contains(QPoint(50, 50)));
++
++        panel.setPosition(origin + QPoint(0, 0));
++        panel.resize(50, 500);
++        QTRY_VERIFY(!overlay.mask().contains(QPoint(25, 250)));
++        QTRY_VERIFY(overlay.mask().contains(QPoint(300, 575)));
++        panel.hide();
++        QTRY_VERIFY(overlay.mask().contains(QPoint(25, 250)));
++        panel.show();
++        QTRY_VERIFY(!overlay.mask().contains(QPoint(25, 250)));
++
++        const QRect card(200, 100, 400, 400);
++        input.setDragRect(card);
++        QCOMPARE(overlay.mask(), QRegion(card));
++        QCoreApplication::sendEvent(&panel, &press);
++        QCOMPARE(panel.lastPress, &press);
++        QCOMPARE(dismissals.count(), 1); // No panel dismissal during DnD.
++        panel.setPosition(origin + QPoint(200, 100));
++        overlay.resize(900, 700);
++        QCoreApplication::processEvents();
++        QCOMPARE(overlay.mask(), QRegion(card)); // Geometry refresh must not end DnD.
++        input.setDragRect({});
++        QVERIFY(!overlay.mask().contains(QPoint(225, 250)));
++        QVERIFY(overlay.mask().contains(QPoint(850, 650)));
++        QVERIFY(overlay.mask().contains(QPoint(25, 250)));
++
++        panel.hide();
++        auto *latePanel = new PanelView;
++        latePanel->setFlags(Qt::FramelessWindowHint);
++        latePanel->setGeometry(QRect(origin + QPoint(700, 0), QSize(100, 100)));
++        latePanel->show();
++        QTRY_VERIFY(!overlay.mask().contains(QPoint(750, 50)));
++        delete latePanel;
++        QTRY_VERIFY(overlay.mask().contains(QPoint(750, 50)));
++
++        overlay.hide();
++        panel.setPosition(origin + QPoint(400, 0));
++        panel.show();
++        overlay.show();
++        QTRY_VERIFY(!overlay.mask().contains(QPoint(425, 250)));
++
++        QCOMPARE(QGuiApplication::screens().size(), 2);
++        auto *otherScreen = QGuiApplication::screens().at(0);
++        overlay.setScreen(otherScreen);
++        overlay.setPosition(otherScreen->geometry().topLeft() + QPoint(37, 53));
++        overlay.show();
++        QTRY_VERIFY(overlay.mask().contains(QPoint(425, 250)));
++        panel.setScreen(otherScreen);
++        panel.setPosition(otherScreen->geometry().topLeft() + QPoint(100, 0));
++        panel.show();
++        QTRY_VERIFY(!overlay.mask().contains(QPoint(125, 250)));
++        QVERIFY(overlay.mask().contains(QPoint(425, 250)));
++    }
++};
++
++int main(int argc, char **argv)
++{
++    QTemporaryFile configuration;
++    if (!configuration.open()) {
++        return 1;
++    }
++    configuration.write(R"({"screens":[{"name":"primary","x":0,"y":0,"width":1000,"height":800},{"name":"left","x":-1200,"y":-200,"width":1200,"height":900}]})");
++    configuration.flush();
++    const QByteArray platform = "offscreen:configfile=" + configuration.fileName().toUtf8();
++    qputenv("QT_QPA_PLATFORM", platform);
++    QGuiApplication app(argc, argv);
++    TestOverlayInputRegion test;
++    return QTest::qExec(&test, argc, argv);
++}
++#include "test_overlayinputregion.moc"
+diff --git a/package/contents/ui/controllers/PlasmoidBridge.qml b/package/contents/ui/controllers/PlasmoidBridge.qml
+--- a/package/contents/ui/controllers/PlasmoidBridge.qml
++++ b/package/contents/ui/controllers/PlasmoidBridge.qml
+@@ -9,7 +9,7 @@
+     slots, and tests can inject a plain QtObject stub with the same
+     method names.
+ 
+-    Pure functions only — non-invokable data (config, models,
++    Invokable methods and input signals only — other data (config, models,
+     updateChecker, etc.) stays on its own property since each has a
+     distinct lifecycle.
+ */
+@@ -19,6 +19,7 @@
+ 
+ QtObject {
+     readonly property bool isWayland: Plasmoid.isWayland
++    readonly property QtObject inputSignals: Plasmoid
+ 
+     function notifyAppLaunched(sid)         { Plasmoid.notifyAppLaunched(sid) }
+     function runInTerminal(cmd, shell)      { Plasmoid.runInTerminal(cmd, shell) }
+diff --git a/package/contents/ui/views/GridWindow.qml b/package/contents/ui/views/GridWindow.qml
+--- a/package/contents/ui/views/GridWindow.qml
++++ b/package/contents/ui/views/GridWindow.qml
+@@ -26,6 +26,20 @@
+     // tests pass plain QtObject mocks that expose the same properties
+     // (dragSource, isDragInFlight, closeWindow(), …).
+     property var appletInterface: null
++
++    Connections {
++        target: root.plasmoidBridge.inputSignals || null
++        function onPanelPressed(window, globalPosition) {
++            if (window !== root || !root.visible || root._dragInFlight || !root.appletInterface)
++                return
++            // Our own icon toggles on release. Closing on its press would
++            // make that release reopen the grid; other panel clicks dismiss.
++            const compact = root.appletInterface.compactRepresentationItem
++            if (compact && compact.contains(compact.mapFromGlobal(globalPosition)))
++                return
++            root.appletInterface.closeWindow()
++        }
++    }
+ 
+     ConfigCache { id: cfg; source: root.configuration }
+ 
+diff --git a/tests/qml/tst_GridPanel.qml b/tests/qml/tst_GridPanel.qml
+--- a/tests/qml/tst_GridPanel.qml
++++ b/tests/qml/tst_GridPanel.qml
+@@ -15,6 +15,51 @@
+ TestCase {
+     id: testCase
+     name: "GridPanel"
++    width: 200
++    height: 100
++    when: windowShown
++    visible: true
++
++    QtObject {
++        id: inputSignals
++        signal panelPressed(var window, point globalPosition)
++    }
++    QtObject {
++        id: appletStub
++        property bool gridOpen: true
++        property bool isDragInFlight: false
++        property var compactRepresentationItem: launcherIcon
++        function closeWindow() { gridOpen = false }
++    }
++    MouseArea {
++        id: launcherIcon
++        x: 30; y: 20; width: 40; height: 40
++        onClicked: appletStub.gridOpen = !appletStub.gridOpen
++    }
++
++    function test_panelPressThenLauncherReleaseClosesOnce() {
++        var window = make("GridWindow.qml")
++        window.appletInterface = appletStub
++        window.visible = true
++        appletStub.gridOpen = true
++        mousePress(launcherIcon, 10, 10)
++        inputSignals.panelPressed(window, launcherIcon.mapToGlobal(10, 10))
++        compare(appletStub.gridOpen, true, "own launcher press defers to its release toggle")
++        mouseRelease(launcherIcon, 10, 10)
++        compare(appletStub.gridOpen, false, "release closes instead of reopening")
++        appletStub.gridOpen = true
++        inputSignals.panelPressed(window, launcherIcon.mapToGlobal(50, 10))
++        compare(appletStub.gridOpen, false, "neighbor on the same panel still dismisses")
++        const oldPosition = launcherIcon.mapToGlobal(10, 10)
++        launcherIcon.x += 60
++        appletStub.gridOpen = true
++        inputSignals.panelPressed(window, launcherIcon.mapToGlobal(10, 10))
++        compare(appletStub.gridOpen, true, "exemption follows current compact geometry")
++        inputSignals.panelPressed(window, oldPosition)
++        compare(appletStub.gridOpen, false, "old icon position is not exempt")
++        launcherIcon.x -= 60
++        window.destroy()
++    }
+ 
+     // notifyAppLaunched spy.
+     property var launchedSids: []
+@@ -134,10 +179,15 @@
+         property string queryString: ""
+     }
+ 
+-    function make() {
+-        var c = Qt.createComponent("../../package/contents/ui/views/GridPanel.qml")
++    function make(file = "GridPanel.qml") {
++        var c = Qt.createComponent("../../package/contents/ui/views/" + file)
+         verify(c.status === Component.Ready, "GridPanel load error: " + c.errorString())
+         var bridgeStub = ({
++            inputSignals: inputSignals,
++            isWayland: true,
++            windowDevicePixelRatio: function(window) { return 1 },
++            setBackgroundEffects: function() {},
++            setInputRect: function() {},
+             notifyAppLaunched: function(sid) { testCase.launchedSids.push(sid) },
+             runInTerminal: function(cmd, shell) {},
+             runCommand: function(cmd, shell) {},
