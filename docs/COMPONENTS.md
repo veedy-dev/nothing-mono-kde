@@ -13,6 +13,8 @@ developed and tested on:
 ## Appearance
 
 - Plasma theme: modified LetMinimalDark / Iridescent-inspired square styling
+- Plasma slider handles: solid theme accent with a dark idle outline and a
+  light outline on hover/focus, shared by horizontal and vertical sliders
 - colors: LetMinimalDark
 - Qt Widgets style: `NothingDolphin`, a small native Breeze override built from
   `native/dolphin-style` with Qt Widgets 6.7+ (from Qt base) and KDE Frameworks
