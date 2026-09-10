@@ -27,8 +27,10 @@ developed and tested on:
   KIOFileWidgets 6.21+ (from KIO development files), using its public breadcrumb
   background API. Only Dolphin breadcrumb/path backgrounds and normal
   unselected tabs use subtle charcoal `#191919`; the active-tab pink indicator
-  and hover feedback remain native. The proxy leaves other surfaces and global
-  color roles to the shared palette; other applications use native Breeze
+  and hover feedback remain native. Places storage meters use a pink `#f25e70`
+  used-space fill while retaining gray row selections, the dark empty track,
+  and native selected/full-disk warning colors. Other surfaces and global color
+  roles use the shared palette; other applications use native Breeze
 - icons: modified Yet Another Monochrome Icon Theme (`YAMIS`)
 - cursor: We10XOS
 - typography: bundled Inter 4.1 (static text family, not Inter Display) for all

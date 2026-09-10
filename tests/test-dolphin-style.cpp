@@ -1,15 +1,16 @@
+#include <KFilePlacesView>
 #include <KUrlComboBox>
 #include <KUrlNavigator>
 #include <QApplication>
-#include <QDir>
-#include <QFile>
+#include <QFileInfo>
 #include <QImage>
 #include <QLineEdit>
 #include <QPainter>
+#include <QPluginLoader>
+#include <QStylePlugin>
 #include <QStyleFactory>
 #include <QStyleOption>
 #include <QTabBar>
-#include <QTemporaryDir>
 #include <QToolBar>
 #include <cstdio>
 #include <cstdlib>
@@ -43,15 +44,13 @@ int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
     require(argc == 2, "pass the built plugin path");
-    QTemporaryDir plugins;
-    require(plugins.isValid(), "temporary plugin directory");
-    QDir(plugins.path()).mkdir("styles");
-    require(QFile::link(QFileInfo(argv[1]).absoluteFilePath(), plugins.path() + "/styles/nothingos-dolphin-style.so"), "stage plugin");
-    app.addLibraryPath(plugins.path());
+    QPluginLoader plugin(QFileInfo(argv[1]).absoluteFilePath());
+    auto *factory = qobject_cast<QStylePlugin *>(plugin.instance());
+    require(factory, "load built plugin directly without an installed-key collision");
     app.setApplicationName("dolphin");
     app.setDesktopFileName("org.kde.dolphin");
-    auto *style = QStyleFactory::create("NothingDolphin");
-    require(style, "load NothingDolphin through Qt factory");
+    auto *style = factory->create("NothingDolphin");
+    require(style, "create Dolphin style from built plugin");
     app.setStyle(style);
     std::unique_ptr<QStyle> breeze(QStyleFactory::create("Breeze"));
     require(bool(breeze), "real Breeze available");
@@ -59,7 +58,7 @@ int main(int argc, char **argv)
     palette.setColor(QPalette::Window, QColor("#121212"));
     palette.setColor(QPalette::Base, QColor("#121212"));
     palette.setColor(QPalette::AlternateBase, QColor("#121212"));
-    palette.setColor(QPalette::Highlight, QColor("#e5a5b5"));
+    palette.setColor(QPalette::Highlight, QColor("#3b3b3b"));
     app.setPalette(palette);
 
     DolphinTabBar tabs;
@@ -145,13 +144,56 @@ int main(int argc, char **argv)
     navigator->setParent(&dialog);
     require(frameImage(style, navigator) == frameImage(breeze.get(), navigator), "reparented dialog navigator unchanged");
 
+    KFilePlacesView places;
+    places.ensurePolished();
+    style->polish(&places); // Re-polish must not replace the original palette with the accent.
+    QStyleOptionViewItem item;
+    item.rect = tab.rect;
+    item.widget = &places;
+    item.showDecorationSelected = true;
+    auto panelImage = [&](QStyle *s, const QPalette &colors, const QWidget *w = nullptr) {
+        item.palette = colors;
+        return paint([&](QPainter *p) { s->drawPrimitive(QStyle::PE_PanelItemViewItem, &item, p, w); });
+    };
+    for (auto group : {QPalette::Active, QPalette::Inactive, QPalette::Disabled}) {
+        auto nativePalette = palette;
+        auto placesPalette = places.palette();
+        nativePalette.setCurrentColorGroup(group);
+        placesPalette.setCurrentColorGroup(group);
+        for (auto state : {QStyle::State_Selected, QStyle::State_MouseOver}) {
+            item.state = QStyle::State_Enabled | QStyle::State_Active | state;
+            require(panelImage(style, placesPalette) == panelImage(breeze.get(), nativePalette),
+                "Places selected/hover pixels stay native across palette groups without widget argument");
+        }
+    }
+    item.state = QStyle::State_Enabled | QStyle::State_Active | QStyle::State_Selected;
+    item.widget = nullptr;
+    require(panelImage(style, places.palette(), &places) == panelImage(breeze.get(), palette, &places),
+        "Places explicit-widget selection stays native");
+    QListView ordinaryList;
+    ordinaryList.ensurePolished();
+    item.widget = &ordinaryList;
+    require(panelImage(style, ordinaryList.palette()) == panelImage(breeze.get(), palette),
+        "ordinary list selection stays native");
+    item.widget = &places;
+    // Unresolved original roles must follow a subsequent application scheme change.
+    auto changedPalette = palette;
+    changedPalette.setColor(QPalette::Highlight, QColor("#454545"));
+    app.setPalette(changedPalette);
+    require(panelImage(style, places.palette()) == panelImage(breeze.get(), changedPalette),
+        "Places selection follows application palette changes");
+    style->unpolish(&places);
+    require(panelImage(breeze.get(), places.palette()) == panelImage(breeze.get(), changedPalette),
+        "unpolish restores native Places selection after repeated polish");
+    app.setPalette(palette);
+
     app.setApplicationName("other-app");
     app.setDesktopFileName("org.example.other");
-    std::unique_ptr<QStyle> other(QStyleFactory::create("NothingDolphin"));
+    std::unique_ptr<QStyle> other(factory->create("NothingDolphin"));
     require(bool(other), "other app style available");
     require(tabImage(other.get(), &tabs) == tabImage(breeze.get(), &tabs), "other app target-named tab unchanged");
     require(frameImage(other.get(), navigator) == frameImage(breeze.get(), navigator), "other app path unchanged");
-    std::printf("PASS: Qt %s; style=%s; tab/breadcrumb/editable=#191919; native selected/hover/focus/pressed/disabled and unrelated controls pixel-identical; real KIO reset/edit-mode/reparent lifecycle verified; other-app passthrough verified\n", qVersion(), qPrintable(style->name()));
+    std::printf("PASS: Qt %s; style=%s; tab/breadcrumb/editable=#191919; native selected/hover/focus/pressed/disabled and unrelated controls pixel-identical; real KIO reset/edit-mode/reparent lifecycle verified; Places native selection/hover, palette changes and unpolish verified; other-app passthrough verified\n", qVersion(), qPrintable(style->name()));
 }
 
 #include "test-dolphin-style.moc"

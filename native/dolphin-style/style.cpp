@@ -6,8 +6,10 @@
 #include <QStyleOption>
 #include <QStylePlugin>
 #include <QWidget>
+#include <QVariant>
 
 namespace {
+constexpr auto placesPaletteProperty = "_nothingDolphin_originalPlacesPalette";
 
 bool isNavigator(const QWidget *widget)
 {
@@ -47,12 +49,24 @@ public:
         if (widget->inherits("KUrlNavigator")) {
             widget->installEventFilter(this);
         }
+        if (widget->inherits("KFilePlacesView") && !widget->property(placesPaletteProperty).isValid()) {
+            auto palette = widget->palette();
+            widget->setProperty(placesPaletteProperty, palette);
+            // KIO paints capacity fills directly with Highlight, not CE_ProgressBar.
+            palette.setColor(QPalette::Highlight, QColor(0xf2, 0x5e, 0x70));
+            widget->setPalette(palette);
+        }
     }
 
     void unpolish(QWidget *widget) override
     {
         widget->removeEventFilter(this);
         QProxyStyle::unpolish(widget);
+        const auto original = widget->property(placesPaletteProperty);
+        if (original.isValid()) {
+            widget->setPalette(original.value<QPalette>());
+            widget->setProperty(placesPaletteProperty, QVariant());
+        }
     }
 
     bool eventFilter(QObject *object, QEvent *event) override
@@ -72,6 +86,25 @@ public:
     void drawPrimitive(PrimitiveElement element, const QStyleOption *option, QPainter *painter,
                        const QWidget *widget = nullptr) const override
     {
+        if (element == PE_PanelItemViewItem) {
+            if (const auto *item = qstyleoption_cast<const QStyleOptionViewItem *>(option)) {
+                // The KIO delegate omits the widget argument; Qt stores the view in the option.
+                const QWidget *view = item->widget ? item->widget : widget;
+                if (view && view->inherits("KFilePlacesView")) {
+                    const auto original = view->property(placesPaletteProperty);
+                    if (original.isValid()) {
+                        auto adjusted = *item;
+                        const auto palette = original.value<QPalette>().resolve(QApplication::palette(view));
+                        for (auto group : {QPalette::Active, QPalette::Inactive, QPalette::Disabled}) {
+                            adjusted.palette.setBrush(group, QPalette::Highlight, palette.brush(group, QPalette::Highlight));
+                        }
+                        // Keep native row selection/hover without changing the delegate's fill palette.
+                        QProxyStyle::drawPrimitive(element, &adjusted, painter, widget);
+                        return;
+                    }
+                }
+            }
+        }
         if (widget && widget->isEnabled() && (option->state & State_Enabled)
             && ((element == PE_FrameLineEdit && isNavigator(widget))
                 || ((element == PE_FrameLineEdit || element == PE_PanelLineEdit) && isPathEditor(widget)))) {
