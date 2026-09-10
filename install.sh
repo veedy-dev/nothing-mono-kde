@@ -142,6 +142,9 @@ run install -d "$backup_dir/config"
 for file in kdeglobals kcminputrc kglobalshortcutsrc kscreenlockerrc kwinrc \
             plasmarc plasma-org.kde.plasma.desktop-appletsrc powerdevilrc \
             Trolltech.conf gtk-3.0/settings.ini gtk-4.0/settings.ini \
+            gtk-3.0/gtk.css gtk-3.0/colors.css gtk-4.0/gtk.css \
+            gtk-4.0/colors.css gtk-4.0/nothing-contrast.css \
+            gtk-3.0/window_decorations.css gtk-4.0/window_decorations.css \
             xsettingsd/xsettingsd.conf plasma-workspace/env/nothing-mono-kde.sh \
             systemd/user/nothingos-edge-groups.service \
             autostart/nothingos-edge-groups.desktop fastfetch/config.jsonc \
@@ -256,8 +259,9 @@ EOF
     fi
 
     printf '\n==> Applying KDE and OLED-safe preferences\n'
-    run kwriteconfig6 --file kdeglobals --group General --key ColorScheme \
-        LetMinimalDark-Theme
+    # The native applicator skips an already-selected name, even when its colors changed.
+    run kwriteconfig6 --file kdeglobals --group General --key ColorScheme --delete
+    run plasma-apply-colorscheme LetMinimalDark-Theme
     run kwriteconfig6 --file kdeglobals --group Icons --key Theme YAMIS
     run kwriteconfig6 --file kdeglobals --group KDE --key widgetStyle NothingDolphin
     run kwriteconfig6 --file kdeglobals --group KDE --key AnimationDurationFactor 1
@@ -272,6 +276,16 @@ EOF
     run kwriteconfig6 --file Trolltech.conf --group qt --key font \
         'Inter,10,-1,5,50,0,0,0,0,0'
     run install -d "$config_home/gtk-3.0" "$config_home/gtk-4.0"
+    run install -m 0644 "$repo_dir/theme/gtk-4.0/contrast.css" \
+        "$config_home/gtk-4.0/nothing-contrast.css"
+    gtk4_css="$config_home/gtk-4.0/gtk.css"
+    contrast_import='@import url("nothing-contrast.css");'
+    if [[ ! -f "$gtk4_css" ]] || ! grep -Fxq "$contrast_import" "$gtk4_css"; then
+        printf '+ append %s to %q\n' "$contrast_import" "$gtk4_css"
+        if ! $dry_run; then
+            printf '\n%s\n' "$contrast_import" >> "$gtk4_css"
+        fi
+    fi
     for version in 3.0 4.0; do
         run kwriteconfig6 --file "$config_home/gtk-$version/settings.ini" \
             --group Settings --key gtk-font-name 'Inter 10'

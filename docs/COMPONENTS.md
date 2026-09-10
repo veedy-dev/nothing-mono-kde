@@ -15,14 +15,20 @@ developed and tested on:
 - Plasma theme: modified LetMinimalDark / Iridescent-inspired square styling
 - Plasma slider handles: solid theme accent with a dark idle outline and a
   light outline on hover/focus, shared by horizontal and vertical sliders
-- colors: LetMinimalDark
+- application colors: black canvas, charcoal controls, subtle idle borders,
+  white-on-gray selections, and readable secondary/disabled text; pink focus
+  accents and the existing slider styling remain
+- Plasma desktop colors remain separate from the quieter application palette;
+  application-only refinements do not change panels, widgets, or wallpaper
+- GTK4: shared Breeze disabled-treeview foreground correction in
+  `theme/gtk-4.0/contrast.css`; no Proton-specific theme or label override
 - Qt Widgets style: `NothingDolphin`, a small native Breeze override built from
   `native/dolphin-style` with Qt Widgets 6.7+ (from Qt base) and KDE Frameworks
   KIOFileWidgets 6.21+ (from KIO development files), using its public breadcrumb
   background API. Only Dolphin breadcrumb/path backgrounds and normal
   unselected tabs use subtle charcoal `#191919`; the active-tab pink indicator
-  and hover feedback remain native. Titlebar, toolbars, sidebar, file area,
-  and global color roles are untouched; other applications use native Breeze
+  and hover feedback remain native. The proxy leaves other surfaces and global
+  color roles to the shared palette; other applications use native Breeze
 - icons: modified Yet Another Monochrome Icon Theme (`YAMIS`)
 - cursor: We10XOS
 - typography: bundled Inter 4.1 (static text family, not Inter Display) for all
@@ -39,6 +45,12 @@ and back in, then reopen applications so they discover and load the style.
 Restore reinstates the previous style selection and environment script; the
 plugin file may remain dormant. Log out and back in after restoring as well.
 Layout-only installation leaves the style and environment unchanged.
+
+Full installation applies the palette through `plasma-apply-colorscheme` rather
+than only changing its name, so KDE exports updated GTK colors too. It preserves
+custom GTK CSS, adds an idempotent GTK4 contrast import, and backs up affected
+GTK CSS files for restore. Restart GTK4 applications to load newly added CSS;
+do not restart an active VPN client until a possible connection interruption is safe.
 
 ## Plasma applets
 

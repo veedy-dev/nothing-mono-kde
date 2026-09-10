@@ -1,0 +1,8 @@
+/* Breeze GTK4 uses border colors for disabled treeview text; use its foreground roles. */
+treeview.view:disabled:not(:selected) {
+    color: @insensitive_base_fg_color_breeze;
+}
+
+treeview.view:disabled:not(:selected):backdrop {
+    color: @insensitive_unfocused_fg_color_breeze;
+}

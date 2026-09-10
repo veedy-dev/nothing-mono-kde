@@ -26,6 +26,19 @@ The script scales margins and keeps practical widget sizes. KDE's global
 display scale still affects the apparent size. Start with 100% on a 5120×1440
 G9 and adjust in System Settings → Display & Monitor.
 
+## GTK app headings are nearly black
+
+Breeze GTK4 uses a border color for disabled treeview text. Apps such as
+Proton VPN use disabled rows as search-section headings, exposing that mismatch.
+The shared `theme/gtk-4.0/contrast.css` override uses the disabled foreground
+roles instead; normal and selected rows keep their native colors. GTK3 does
+not need this correction. The full installer installs the override and
+preserves existing custom GTK CSS. Reopen GTK4 applications after installation
+when safe; restarting a VPN client may interrupt its connection.
+
+Check the rule with `python3 tests/test-gtk-contrast.py` in a GTK4 graphical
+session. This runs a local widget only and does not launch or control a VPN.
+
 ## Restore the previous desktop
 
 ```bash

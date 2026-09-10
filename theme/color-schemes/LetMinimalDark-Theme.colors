@@ -2,13 +2,13 @@
 Color=56,56,56
 ColorAmount=0
 ColorEffect=0
-ContrastAmount=0.65
+ContrastAmount=0.45
 ContrastEffect=1
 IntensityAmount=0
 IntensityEffect=2
 
 [ColorEffects:Inactive]
-ChangeSelectionColor=true
+ChangeSelectionColor=false
 Color=112,111,110
 ColorAmount=0.025
 ColorEffect=2
@@ -19,11 +19,11 @@ IntensityAmount=0
 IntensityEffect=0
 
 [Colors:Button]
-BackgroundAlternate=30,87,116
-BackgroundNormal=48,48,48
+BackgroundAlternate=44,44,44
+BackgroundNormal=36,36,36
 DecorationFocus=242,94,112
 DecorationHover=242,94,112
-ForegroundInactive=161,169,177
+ForegroundInactive=184,184,184
 ForegroundLink=29,153,243
 ForegroundNegative=218,68,83
 ForegroundNeutral=246,116,0
@@ -32,9 +32,9 @@ ForegroundPositive=39,174,96
 ForegroundVisited=155,89,182
 
 [Colors:Complementary]
-BackgroundAlternate=30,87,116
-BackgroundNormal=32,35,38
-ForegroundInactive=161,169,177
+BackgroundAlternate=48,48,48
+BackgroundNormal=36,36,36
+ForegroundInactive=184,184,184
 ForegroundLink=29,153,243
 ForegroundNegative=218,68,83
 ForegroundNeutral=246,116,0
@@ -43,9 +43,9 @@ ForegroundPositive=39,174,96
 ForegroundVisited=155,89,182
 
 [Colors:Header]
-BackgroundAlternate=18,18,18
-BackgroundNormal=18,18,18
-ForegroundInactive=161,169,177
+BackgroundAlternate=25,25,25
+BackgroundNormal=25,25,25
+ForegroundInactive=184,184,184
 ForegroundLink=29,153,243
 ForegroundNegative=218,68,83
 ForegroundNeutral=246,116,0
@@ -54,9 +54,9 @@ ForegroundPositive=39,174,96
 ForegroundVisited=155,89,182
 
 [Colors:Header][Inactive]
-BackgroundAlternate=41,44,48
-BackgroundNormal=32,35,38
-ForegroundInactive=161,169,177
+BackgroundAlternate=25,25,25
+BackgroundNormal=25,25,25
+ForegroundInactive=184,184,184
 ForegroundLink=29,153,243
 ForegroundNegative=218,68,83
 ForegroundNeutral=246,116,0
@@ -65,12 +65,12 @@ ForegroundPositive=39,174,96
 ForegroundVisited=155,89,182
 
 [Colors:Selection]
-BackgroundAlternate=30,87,116
-BackgroundNormal=242,94,112
-DecorationFocus=55,55,55
+BackgroundAlternate=59,59,59
+BackgroundNormal=59,59,59
+DecorationFocus=242,94,112
 DecorationHover=242,94,112
 ForegroundActive=252,252,252
-ForegroundInactive=161,169,177
+ForegroundInactive=220,220,220
 ForegroundLink=253,188,75
 ForegroundNegative=218,68,83
 ForegroundNeutral=246,116,0
@@ -79,11 +79,11 @@ ForegroundPositive=39,174,96
 ForegroundVisited=155,89,182
 
 [Colors:Tooltip]
-BackgroundAlternate=32,35,38
-BackgroundNormal=18,18,18
-DecorationFocus=55,55,55
+BackgroundAlternate=48,48,48
+BackgroundNormal=36,36,36
+DecorationFocus=242,94,112
 DecorationHover=242,94,112
-ForegroundInactive=161,169,177
+ForegroundInactive=184,184,184
 ForegroundLink=29,153,243
 ForegroundNegative=218,68,83
 ForegroundNeutral=246,116,0
@@ -92,11 +92,11 @@ ForegroundPositive=39,174,96
 ForegroundVisited=155,89,182
 
 [Colors:View]
-BackgroundAlternate=18,18,18
+BackgroundAlternate=28,28,28
 BackgroundNormal=18,18,18
-DecorationFocus=55,55,55
+DecorationFocus=242,94,112
 DecorationHover=242,94,112
-ForegroundInactive=161,169,177
+ForegroundInactive=184,184,184
 ForegroundLink=29,153,243
 ForegroundNegative=218,68,83
 ForegroundNeutral=246,116,0
@@ -105,11 +105,11 @@ ForegroundPositive=39,174,96
 ForegroundVisited=155,89,182
 
 [Colors:Window]
-BackgroundAlternate=18,18,18
+BackgroundAlternate=28,28,28
 BackgroundNormal=18,18,18
-DecorationFocus=55,55,55
+DecorationFocus=242,94,112
 DecorationHover=242,94,112
-ForegroundInactive=161,169,177
+ForegroundInactive=184,184,184
 ForegroundLink=29,153,243
 ForegroundNegative=218,68,83
 ForegroundNeutral=246,116,0
@@ -125,12 +125,12 @@ shadeSortColumn=true
 [KDE]
 Contrast=1
 contrast=4
-frameContrast=0.05
+frameContrast=0.08
 
 [WM]
-activeBackground=39,44,49
+activeBackground=25,25,25
 activeBlend=252,252,252
 activeForeground=252,252,252
-inactiveBackground=32,36,40
-inactiveBlend=161,169,177
-inactiveForeground=161,169,177
+inactiveBackground=25,25,25
+inactiveBlend=184,184,184
+inactiveForeground=184,184,184
